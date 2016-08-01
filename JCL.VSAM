@@ -1,0 +1,34 @@
+//IBMUSER2 JOB (IBMUSER),'DDD',CLASS=A,MSGCLASS=0                        
+//*                                                                     
+//* JCL TO CREATE VSAM AND WRITE DATA TO IT                             
+//*                                                                     
+//STEP01 EXEC  PGM=IDCAMS                                               
+//SYSPRINT DD SYSOUT=*                                                  
+//SYSOUT   DD SYSOUT=*                                                  
+//SYSIN    DD *                                                         
+  DEFINE CLUSTER(NAME(SEARCH2.KSDS) -                                   
+     TRACKS(1,1) -                                                      
+     RECORDSIZE(80 80) -                                                
+     KEYS(2 0) -                                                        
+     VOLUME(JASYS1) -                                                   
+     INDEXED) -                                                         
+  DATA(NAME(SEARCH2.KSDS.DATA)) -                                       
+  INDEX(NAME(SEARCH2.KSDS.INDEX))                                       
+/*                                                                      
+//*                                                                     
+//STEP02 EXEC PGM=IDCAMS                                                
+//SYSPRINT DD SYSOUT=*                                                  
+//SYSOUT   DD SYSOUT=*                                                  
+//SYSIN    DD *                                                         
+  REPRO INFILE(INDD) OUTDATASET(SEARCH2.KSDS)                           
+  IF LASTCC = 0 THEN -                                                  
+       LISTCAT ENTRIES(SEARCH2.KSDS)                                    
+  IF LASTCC = 0 THEN -                                                  
+       PRINT INDATASET(SEARCH2.KSDS)                                    
+/*                                                                      
+//INDD     DD *                                                         
+01 NONO  1000 19991010                                                  
+02 TEST  2000 20001010                                                  
+03 HELLO 5000 20000000                                                  
+/*                                                                      
+//                                                                      
